@@ -98,7 +98,7 @@ static int mif_min_table[] = {
 
 static gpu_attribute gpu_config_attributes[] = {
 	{GPU_MAX_CLOCK, 546},
-	{GPU_MAX_CLOCK_LIMIT, 546},
+	{GPU_MAX_CLOCK_LIMIT, 572},
 	{GPU_MIN_CLOCK, 112},
 	{GPU_DVFS_START_CLOCK, 112},
 	{GPU_DVFS_BL_CONFIG_CLOCK, 112},
@@ -623,8 +623,8 @@ int gpu_asv_calibration_start(void)
 	}
 
 	gpu_control_power_policy_set(pkbdev, "always_on");
-	gpu_dvfs_clock_lock(GPU_DVFS_MAX_LOCK, ASV_CALI_LOCK, 546);
-	gpu_dvfs_clock_lock(GPU_DVFS_MIN_LOCK, ASV_CALI_LOCK, 546);
+	gpu_dvfs_clock_lock(GPU_DVFS_MAX_LOCK, ASV_CALI_LOCK, 572);
+	gpu_dvfs_clock_lock(GPU_DVFS_MIN_LOCK, ASV_CALI_LOCK, 572);
 	gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_RESET);
 	return 0;
 }
