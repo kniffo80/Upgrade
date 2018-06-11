@@ -126,7 +126,9 @@ endif
 
 # Debug
 DHDCFLAGS += -DSIMPLE_MAC_PRINT
+ifeq ($(CONFIG_DEBUG_FS),y)
 DHDCFLAGS += -DDEBUGFS_CFG80211
+endif
 # Enable wakelock for legacy scan
 DHDCFLAGS += -DDHD_USE_SCAN_WAKELOCK
 # Enable wakelock debug function

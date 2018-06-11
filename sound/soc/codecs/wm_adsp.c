@@ -4009,6 +4009,7 @@ int wm_adsp2_lock(struct wm_adsp *dsp, unsigned int lock_regions)
 		lock_reg += 2;
 	}
 
+#ifdef CONFIG_DEBUG_FS
 	switch (dsp->rev) {
 	case 0:
 	case 1:
@@ -4023,6 +4024,7 @@ int wm_adsp2_lock(struct wm_adsp *dsp, unsigned int lock_regions)
 			return ret;
 		break;
 	}
+#endif
 
 	return 0;
 }
