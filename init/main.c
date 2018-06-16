@@ -82,6 +82,9 @@
 #include <linux/proc_ns.h>
 #include <linux/io.h>
 
+#include <linux/variant_detection.h>
+unsigned int variant_plus = NOT_PLUS;
+
 #include <asm/io.h>
 #include <asm/bugs.h>
 #include <asm/setup.h>
@@ -672,6 +675,17 @@ asmlinkage __visible void __init start_kernel(void)
 	page_alloc_init();
 
 	pr_notice("Kernel command line: %s\n", boot_command_line);
+	/* Variant Detection */
+	if (strstr(boot_command_line, "G950")) {
+		pr_alert("FOUND NON-PLUS VARIANT");
+		variant_plus = NOT_PLUS;
+	} else if (strstr(boot_command_line, "G955")) {
+		pr_alert("FOUND PLUS VARIANT");
+		variant_plus = IS_PLUS;
+	}
+	else
+		pr_alert("FOUND UNKNOWN VARIANT");
+
 	parse_early_param();
 	after_dashes = parse_args("Booting kernel",
 				  static_command_line, __start___param,
