@@ -18,6 +18,7 @@
 #endif
 #include <linux/sec_debug.h>
 #include <linux/sec_batt.h>
+#include <linux/variant_detection.h>
 
 #define DEBUG
 
@@ -401,9 +402,13 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 	}
 	errorno = gpio_direction_input(data->mcu_host_wake_int);
 #endif
-
-	if (of_property_read_u32(np, "ssp-acc-position", &data->accel_position))
-		data->accel_position = 0;
+	if (variant_plus == IS_PLUS) {
+		if (of_property_read_u32(np, "ssp-acc-position_P", &data->accel_position))
+			data->accel_position = 0;
+	} else {
+		if (of_property_read_u32(np, "ssp-acc-position", &data->accel_position))
+			data->accel_position = 0;
+	}
 	if (of_property_read_u32(np, "ssp-mag-position", &data->mag_position))
 		data->mag_position = 0;
 
@@ -479,30 +484,59 @@ static int ssp_parse_dt(struct device *dev, struct ssp_data *data)
 #endif
 
 	/* magnetic matrix */
-	if (data->mag_type == 1) {
-		if (of_property_read_u8_array(np, "ssp-mag-array",
-		data->pdc_matrix, sizeof(data->pdc_matrix)))
-			pr_err("no mag-array, set as 0");
-	} else {
-		if (!of_get_property(np, "ssp-mag-array", &len)) {
-			pr_info("[SSP] No static matrix at DT for YAS532!(%p)\n",
-					data->static_matrix);
-			goto dt_exit;
-		}
-		if (len/4 != 9) {
-			pr_err("[SSP] Length/4:%d should be 9 for YAS532!\n", len/4);
-			goto dt_exit;
-		}
-		data->static_matrix = kzalloc(9*sizeof(s16), GFP_KERNEL);
-		pr_info("[SSP] static matrix Length:%d, Len/4=%d\n", len, len/4);
-
-		for (i = 0; i < 9; i++) {
-			if (of_property_read_u32_index(np, "ssp-mag-array", i, &temp)) {
-				pr_err("[SSP] %s cannot get u32 of array[%d]!\n",
-					__func__, i);
+	if (variant_plus == IS_PLUS) {
+		if (data->mag_type == 1) {
+			if (of_property_read_u8_array(np, "ssp-mag-array_P",
+			data->pdc_matrix, sizeof(data->pdc_matrix)))
+				pr_err("no mag-array, set as 0");
+		} else {
+			if (!of_get_property(np, "ssp-mag-array_P", &len)) {
+				pr_info("[SSP] No static matrix at DT for YAS532!(%p)\n",
+						data->static_matrix);
 				goto dt_exit;
 			}
-			*(data->static_matrix+i) = (int)temp;
+			if (len/4 != 9) {
+				pr_err("[SSP] Length/4:%d should be 9 for YAS532!\n", len/4);
+				goto dt_exit;
+			}
+			data->static_matrix = kzalloc(9*sizeof(s16), GFP_KERNEL);
+			pr_info("[SSP] static matrix Length:%d, Len/4=%d\n", len, len/4);
+
+			for (i = 0; i < 9; i++) {
+				if (of_property_read_u32_index(np, "ssp-mag-array_P", i, &temp)) {
+					pr_err("[SSP] %s cannot get u32 of array[%d]!\n",
+						__func__, i);
+					goto dt_exit;
+				}
+				*(data->static_matrix+i) = (int)temp;
+			}
+		}
+	} else {
+		if (data->mag_type == 1) {
+			if (of_property_read_u8_array(np, "ssp-mag-array",
+			data->pdc_matrix, sizeof(data->pdc_matrix)))
+				pr_err("no mag-array, set as 0");
+		} else {
+			if (!of_get_property(np, "ssp-mag-array", &len)) {
+				pr_info("[SSP] No static matrix at DT for YAS532!(%p)\n",
+						data->static_matrix);
+				goto dt_exit;
+			}
+			if (len/4 != 9) {
+				pr_err("[SSP] Length/4:%d should be 9 for YAS532!\n", len/4);
+				goto dt_exit;
+			}
+			data->static_matrix = kzalloc(9*sizeof(s16), GFP_KERNEL);
+			pr_info("[SSP] static matrix Length:%d, Len/4=%d\n", len, len/4);
+
+			for (i = 0; i < 9; i++) {
+				if (of_property_read_u32_index(np, "ssp-mag-array", i, &temp)) {
+					pr_err("[SSP] %s cannot get u32 of array[%d]!\n",
+						__func__, i);
+					goto dt_exit;
+				}
+				*(data->static_matrix+i) = (int)temp;
+			}
 		}
 	}
 

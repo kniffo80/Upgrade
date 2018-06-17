@@ -33,6 +33,7 @@
 #include "panel_drv.h"
 #include "dpui.h"
 #include "mdnie.h"
+#include <linux/variant_detection.h>
 #ifdef CONFIG_EXYNOS_DECON_LCD_SPI
 #include "spi.h"
 #endif
@@ -1598,7 +1599,10 @@ static int panel_parse_lcd_info(struct panel_device *panel)
 	struct lcd_hdr_info *hdr_info = &panel_info->hdr_info;
 #endif
 
-	node = of_parse_phandle(dev->of_node, "ddi_info", 0);
+	if (variant_plus == IS_PLUS)
+		node = of_parse_phandle(dev->of_node, "ddi_info_P", 0);
+	else
+		node = of_parse_phandle(dev->of_node, "ddi_info", 0);
 
 	err = of_property_read_string(node, "ldi_name", &panel_info->ldi_name);
 	if (err) {
@@ -1780,13 +1784,21 @@ static int panel_parse_panel_lookup(struct panel_device *panel)
 	struct device_node *np;
 	int ret, i, sz, sz_lut;
 
-	np = of_get_child_by_name(dev->of_node, "panel-lookup");
+	if (variant_plus == IS_PLUS)
+		np = of_get_child_by_name(dev->of_node, "panel-lookup_P");
+	else
+		np = of_get_child_by_name(dev->of_node, "panel-lookup");
+
 	if (unlikely(!np)) {
 		panel_warn("PANEL:WARN:%s:No DT node for panel-lookup\n", __func__);
 		return -EINVAL;
 	}
 
-	sz = of_property_count_strings(np, "panel-name");
+	if (variant_plus == IS_PLUS)
+		sz = of_property_count_strings(np, "panel-name_P");
+	else
+		sz = of_property_count_strings(np, "panel-name");
+
 	if (sz <= 0) {
 		panel_warn("PANEL:WARN:%s:No panel-name property\n", __func__);
 		return -EINVAL;
@@ -1798,8 +1810,13 @@ static int panel_parse_panel_lookup(struct panel_device *panel)
 	}
 
 	for (i = 0; i < sz; i++) {
-		ret = of_property_read_string_index(np,
-				"panel-name", i, &lut_info->names[i]);
+		if (variant_plus == IS_PLUS)
+			ret = of_property_read_string_index(np,
+					"panel-name_P", i, &lut_info->names[i]);
+		else
+			ret = of_property_read_string_index(np,
+					"panel-name", i, &lut_info->names[i]);
+
 		if (ret) {
 			panel_warn("PANEL:WARN:%s:failed to read panel-name[%d]\n",
 					__func__, i);
@@ -1808,15 +1825,24 @@ static int panel_parse_panel_lookup(struct panel_device *panel)
 	}
 	lut_info->nr_panel = sz;
 
-	sz_lut = of_property_count_u32_elems(np, "panel-lut");
+	if (variant_plus == IS_PLUS)
+		sz_lut = of_property_count_u32_elems(np, "panel-lut_P");
+	else
+		sz_lut = of_property_count_u32_elems(np, "panel-lut");
+
 	if ((sz_lut % 3) || (sz_lut >= MAX_PANEL_LUT)) {
 		panel_warn("PANEL:WARN:%s:sz_lut(%d) should be multiple of 3"
 				" and less than MAX_PANEL_LUT\n", __func__, sz_lut);
 		return -EINVAL;
 	}
 
-	ret = of_property_read_u32_array(np, "panel-lut",
-			(u32 *)lut_info->lut, sz_lut);
+	if (variant_plus == IS_PLUS)
+		ret = of_property_read_u32_array(np, "panel-lut_P",
+				(u32 *)lut_info->lut, sz_lut);
+	else
+		ret = of_property_read_u32_array(np, "panel-lut",
+				(u32 *)lut_info->lut, sz_lut);
+
 	if (ret) {
 		panel_warn("PANEL:WARN:%s:failed to read panel-ltu\n", __func__);
 		return -EINVAL;

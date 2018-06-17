@@ -18,6 +18,7 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include "include/fuelgauge/max77865_fuelgauge.h"
+#include <linux/variant_detection.h>
 
 static enum power_supply_property max77865_fuelgauge_props[] = {
 };
@@ -1996,8 +1997,13 @@ static int max77865_fuelgauge_parse_dt(struct max77865_fuelgauge_data *fuelgauge
 		fuelgauge->using_hw_vempty = of_property_read_bool(np,
 								   "fuelgauge,using_hw_vempty");
 		if (fuelgauge->using_hw_vempty) {
-			ret = of_property_read_u32(np, "fuelgauge,v_empty",
-						   &fuelgauge->battery_data->V_empty);
+			if (variant_plus == IS_PLUS)
+				ret = of_property_read_u32(np, "fuelgauge,v_empty_P",
+							   &fuelgauge->battery_data->V_empty);
+			else
+				ret = of_property_read_u32(np, "fuelgauge,v_empty",
+							   &fuelgauge->battery_data->V_empty);
+
 			if (ret < 0)
 				pr_err("%s error reading v_empty %d\n",
 				       __func__, ret);
@@ -2046,14 +2052,24 @@ static int max77865_fuelgauge_parse_dt(struct max77865_fuelgauge_data *fuelgauge
 								      "fuelgauge,jig_low_active");
 		}
 
-		ret = of_property_read_u32(np, "fuelgauge,qrtable20",
-					   &fuelgauge->battery_data->QResidual20);
+		if (variant_plus == IS_PLUS)
+			ret = of_property_read_u32(np, "fuelgauge,qrtable20_P",
+						   &fuelgauge->battery_data->QResidual20);
+		else
+			ret = of_property_read_u32(np, "fuelgauge,qrtable20",
+						   &fuelgauge->battery_data->QResidual20);
+
 		if (ret < 0)
 			pr_err("%s error reading qrtable20 %d\n",
 			       __func__, ret);
 
-		ret = of_property_read_u32(np, "fuelgauge,qrtable30",
-					   &fuelgauge->battery_data->QResidual30);
+		if (variant_plus == IS_PLUS)
+			ret = of_property_read_u32(np, "fuelgauge,qrtable30_P",
+						   &fuelgauge->battery_data->QResidual30);
+		else
+			ret = of_property_read_u32(np, "fuelgauge,qrtable30",
+						   &fuelgauge->battery_data->QResidual30);
+
 		if (ret < 0)
 			pr_err("%s error reading qrtabel30 %d\n",
 			       __func__, ret);
@@ -2103,8 +2119,13 @@ static int max77865_fuelgauge_parse_dt(struct max77865_fuelgauge_data *fuelgauge
 					__func__, ret);
 #endif
 
-		ret = of_property_read_u32(np, "fuelgauge,capacity",
-					   &fuelgauge->battery_data->Capacity);
+		if (variant_plus == IS_PLUS)
+			ret = of_property_read_u32(np, "fuelgauge,capacity_P",
+						   &fuelgauge->battery_data->Capacity);
+		else
+			ret = of_property_read_u32(np, "fuelgauge,capacity",
+						   &fuelgauge->battery_data->Capacity);
+
 		if (ret < 0)
 			pr_err("%s error reading capacity_calculation_type %d\n",
 					__func__, ret);
@@ -2123,8 +2144,13 @@ static int max77865_fuelgauge_parse_dt(struct max77865_fuelgauge_data *fuelgauge
 				fuelgauge->discharge_volt_threshold = 4200;
 		}
 
-		ret = of_property_read_u32(np, "fuelgauge,ttf_capacity",
-					   &fuelgauge->ttf_capacity);
+		if (variant_plus == IS_PLUS)
+			ret = of_property_read_u32(np, "fuelgauge,ttf_capacity_P",
+						   &fuelgauge->ttf_capacity);
+		else
+			ret = of_property_read_u32(np, "fuelgauge,ttf_capacity",
+						   &fuelgauge->ttf_capacity);
+
 		if (ret < 0) {
 			pr_err("%s error reading capacity_calculation_type %d\n",
 					__func__, ret);
@@ -2167,8 +2193,13 @@ static int max77865_fuelgauge_parse_dt(struct max77865_fuelgauge_data *fuelgauge
 		}
 
 		np = of_find_node_by_name(NULL, "cable-info");
-		ret = of_property_read_u32(np, "full_check_current_1st", &pdata->full_check_current_1st);
-		ret = of_property_read_u32(np, "full_check_current_2nd", &pdata->full_check_current_2nd);
+		if (variant_plus == IS_PLUS) {
+			ret = of_property_read_u32(np, "full_check_current_1st_P", &pdata->full_check_current_1st);
+			ret = of_property_read_u32(np, "full_check_current_2nd_P", &pdata->full_check_current_2nd);
+		} else {
+			ret = of_property_read_u32(np, "full_check_current_1st", &pdata->full_check_current_1st);
+			ret = of_property_read_u32(np, "full_check_current_2nd", &pdata->full_check_current_2nd);
+		}
 
 #if defined(CONFIG_BATTERY_AGE_FORECAST)
 		ret = of_property_read_u32(np, "battery,full_condition_soc",

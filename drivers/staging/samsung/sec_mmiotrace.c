@@ -21,6 +21,7 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
+#include <linux/variant_detection.h>
 
 #ifdef CONFIG_NO_BOOTMEM
 #include <linux/memblock.h>
@@ -1018,9 +1019,11 @@ static int sec_mmiotrace_probe(struct platform_device *pdev)
 	for_each_child_of_node(node, pp) {
 		const char *buf = NULL;
 
-		of_property_read_u32(pp, "mmiotrace,addr", &phys_addr);
-		of_property_read_u32(pp, "mmiotrace,size", &size);
-		of_property_read_string(pp, "mmiotrace,type", &buf);
+		if (variant_plus == IS_PLUS) {
+			of_property_read_u32(pp, "mmiotrace,addr", &phys_addr);
+			of_property_read_u32(pp, "mmiotrace,size", &size);
+			of_property_read_string(pp, "mmiotrace,type", &buf);
+		}
 
 		pr_debug("%s 0x%x 0x%x %s\n",
 			 __func__, phys_addr, size, buf);
@@ -1034,7 +1037,8 @@ static int sec_mmiotrace_probe(struct platform_device *pdev)
 		else
 			continue;
 
-		of_property_read_string(pp, "mmiotrace,name", &buf);
+		if (variant_plus == IS_PLUS)
+			of_property_read_string(pp, "mmiotrace,name", &buf);
 
 		sec_mmiotrace_commander_set((u64)phys_addr, (u64)size, type, buf);
 	}

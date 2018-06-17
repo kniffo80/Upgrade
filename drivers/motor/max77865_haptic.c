@@ -27,6 +27,7 @@
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
 #include <linux/kthread.h>
+#include <linux/variant_detection.h>
 #if defined(CONFIG_SSP_MOTOR_CALLBACK)
 #include <linux/ssp_motorcallback.h>
 #endif
@@ -707,8 +708,13 @@ static struct max77865_haptic_pdata *of_max77865_haptic_dt(struct device *dev)
 			goto err_parsing_dt;
 		}
 
-		ret = of_property_read_u32_array(np, "haptic,duty", pdata->multi_freq_duty,
-				pdata->multi_frequency);
+		if (variant_plus == IS_PLUS)
+			ret = of_property_read_u32_array(np, "haptic,duty_P", pdata->multi_freq_duty,
+					pdata->multi_frequency);
+		else
+			ret = of_property_read_u32_array(np, "haptic,duty", pdata->multi_freq_duty,
+					pdata->multi_frequency);
+
 		if (IS_ERR_VALUE(ret)) {
 			pr_err("%s : error to get dt node duty\n", __func__);
 			goto err_parsing_dt;

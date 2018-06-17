@@ -37,7 +37,7 @@
 #include "fimc-is-device-sensor-peri.h"
 #include "fimc-is-resourcemgr.h"
 #include "fimc-is-dt.h"
-
+#include <linux/variant_detection.h>
 #include "fimc-is-device-module-base.h"
 
 #define S5K2L2_PDAF_MAXWIDTH	0 /* MAX witdh size */
@@ -197,7 +197,8 @@ static int sensor_2l2_power_setpin(struct platform_device *pdev,
 	}
 
 	if (power_seq_id == 1) {
-		gpio_ois_reset = of_get_named_gpio(dnode, "gpio_ois_reset", 0);
+		if (variant_plus == IS_PLUS)
+			gpio_ois_reset = of_get_named_gpio(dnode, "gpio_ois_reset", 0);
 		if (gpio_is_valid(gpio_ois_reset)) {
 			gpio_request_one(gpio_ois_reset, GPIOF_OUT_INIT_LOW, "CAM_GPIO_OUTPUT_LOW");
 			gpio_free(gpio_ois_reset);

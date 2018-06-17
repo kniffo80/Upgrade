@@ -17,6 +17,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/power_supply.h>
 #include "sx9320_reg.h"
+#include <linux/variant_detection.h>
 #if defined(CONFIG_MUIC_NOTIFIER)
 #include <linux/muic/muic.h>
 #include <linux/muic/muic_notifier.h>
@@ -1560,16 +1561,23 @@ static int sx9320_parse_dt(struct sx9320_p *data, struct device *dev)
 	sx9320_read_setupreg(node, SX9320_GAIN, &data->gain);
 	sx9320_read_setupreg(node, SX9320_AGAIN, &data->again);
 	sx9320_read_setupreg(node, SX9320_SCANPERIOD, &data->scan_period);
-	sx9320_read_setupreg(node, SX9320_RANGE, &data->range);
-	sx9320_read_setupreg(node, SX9320_SAMPLING_FREQ, &data->sampling_freq);
-	sx9320_read_setupreg(node, SX9320_RESOLUTION, &data->resolution);
 	sx9320_read_setupreg(node, SX9320_RAWFILT, &data->rawfilt);
 	sx9320_read_setupreg(node, SX9320_HYST, &data->hyst);
 	sx9320_read_setupreg(node, SX9320_AVGPOSFILT, &data->avgposfilt);
 	sx9320_read_setupreg(node, SX9320_AVGNEGFILT, &data->avgnegfilt);
 	sx9320_read_setupreg(node, SX9320_AVGTHRESH, &data->avgthresh);
 	sx9320_read_setupreg(node, SX9320_DEBOUNCER, &data->debouncer);
-	sx9320_read_setupreg(node, SX9320_NORMALTHD, &data->normal_th);
+	sx9320_read_setupreg(node, SX9320_RANGE, &data->range);
+
+	if (variant_plus == NOT_PLUS) {
+		sx9320_read_setupreg(node, SX9320_SAMPLING_FREQ, &data->sampling_freq);
+		sx9320_read_setupreg(node, SX9320_RESOLUTION, &data->resolution);
+		sx9320_read_setupreg(node, SX9320_NORMALTHD, &data->normal_th);
+	} else {
+		sx9320_read_setupreg(node, SX9320_SAMPLING_FREQP, &data->sampling_freq);
+		sx9320_read_setupreg(node, SX9320_RESOLUTIONP, &data->resolution);
+		sx9320_read_setupreg(node, SX9320_NORMALTHDP, &data->normal_th);
+	}
 
 	if (sx9320_read_setupreg(node, SX9320_AFEPH0, &data->afeph0))
 		data->afeph0 = setup_reg[8].val;

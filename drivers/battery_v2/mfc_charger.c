@@ -37,6 +37,7 @@
 #include <linux/vmalloc.h>
 #include <linux/ctype.h>
 #include <linux/firmware.h>
+#include <linux/variant_detection.h>
 
 #define ENABLE 1
 #define DISABLE 0
@@ -3031,8 +3032,13 @@ static int mfc_chg_parse_dt(struct device *dev,
 			pdata->mst_switch_delay = 1000; /* set default value (dream) */
 		}
 
-		ret = of_property_read_u32(np, "battery,wc_cover_rpp",
-						&pdata->wc_cover_rpp);
+		if (variant_plus == IS_PLUS)
+			ret = of_property_read_u32(np, "battery,wc_cover_rpp_P",
+							&pdata->wc_cover_rpp);
+		else
+			ret = of_property_read_u32(np, "battery,wc_cover_rpp",
+							&pdata->wc_cover_rpp);
+
 		if (ret < 0) {
 			pr_info("%s: fail to read wc_cover_rpp. \n", __func__);
 			pdata->wc_cover_rpp = 0x55;

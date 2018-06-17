@@ -52,6 +52,7 @@
 #include <linux/firmware.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h>
+#include <linux/variant_detection.h>
 #include <linux/input/mt.h>
 #include <linux/variant_detection.h>
 #ifdef CONFIG_SEC_SYSFS
@@ -2432,22 +2433,24 @@ static int fts_parse_dt(struct i2c_client *client)
 	int connected;
 #endif
 
-	pdata->tsp_icid = of_get_named_gpio(np, "stm,tsp-icid_gpio", 0);
-	if (gpio_is_valid(pdata->tsp_icid)) {
-		input_info(true, dev, "%s: TSP_ICID : %d\n", __func__, gpio_get_value(pdata->tsp_icid));
-		if (of_property_read_u32(np, "stm,icid_match_value", &ic_match_value)) {
-			input_err(true, dev, "%s: Failed to get icid match value\n", __func__);
-			return -EINVAL;
-		} else {
-			input_err(true, dev, "%s: IC matched value : %d\n", __func__, ic_match_value);
-		}
+	if (variant_plus == NOT_PLUS) {
+		pdata->tsp_icid = of_get_named_gpio(np, "stm,tsp-icid_gpio", 0);
+		if (gpio_is_valid(pdata->tsp_icid)) {
+			input_info(true, dev, "%s: TSP_ICID : %d\n", __func__, gpio_get_value(pdata->tsp_icid));
+			if (of_property_read_u32(np, "stm,icid_match_value", &ic_match_value)) {
+				input_err(true, dev, "%s: Failed to get icid match value\n", __func__);
+				return -EINVAL;
+			} else {
+				input_err(true, dev, "%s: IC matched value : %d\n", __func__, ic_match_value);
+			}
 
-		if (gpio_get_value(pdata->tsp_icid) != ic_match_value) {
-			input_err(true, dev, "%s: Do not match TSP_ICID\n", __func__);
-			return -EINVAL;
+			if (gpio_get_value(pdata->tsp_icid) != ic_match_value) {
+				input_err(true, dev, "%s: Do not match TSP_ICID\n", __func__);
+				return -EINVAL;
+			}
+		} else {
+			input_err(true, dev, "%s: Failed to get tsp-icid gpio\n", __func__);
 		}
-	} else {
-		input_err(true, dev, "%s: Failed to get tsp-icid gpio\n", __func__);
 	}
 
 	if (gpio_is_valid(pdata->tsp_icid)) {
@@ -2456,7 +2459,9 @@ static int fts_parse_dt(struct i2c_client *client)
 			input_err(true, dev, "%s: Unable to request tsp_icid [%d]\n", __func__, pdata->tsp_icid);
 	}
 
-	pdata->tsp_id = of_get_named_gpio(np, "stm,tsp-id_gpio", 0);
+	if (variant_plus == IS_PLUS)
+		pdata->tsp_id = of_get_named_gpio(np, "stm,tsp-id_gpio_P", 0);
+
 	if (gpio_is_valid(pdata->tsp_id))
 		input_info(true, dev, "%s: TSP_ID : %d\n", __func__, gpio_get_value(pdata->tsp_id));
 	else
@@ -2468,7 +2473,9 @@ static int fts_parse_dt(struct i2c_client *client)
 			input_err(true, dev, "%s: Unable to request tsp_id [%d]\n", __func__, pdata->tsp_id);
 	}
 
-	pdata->device_id = of_get_named_gpio(np, "stm,device_gpio", 0);
+	if (variant_plus == NOT_PLUS)
+		pdata->device_id = of_get_named_gpio(np, "stm,device_gpio", 0);
+
 	if (gpio_is_valid(pdata->device_id))
 		input_info(true, dev, "%s: Device ID : %d\n", __func__, gpio_get_value(pdata->device_id));
 	else
@@ -2513,15 +2520,34 @@ static int fts_parse_dt(struct i2c_client *client)
 	/* Optional parmeters(those values are not mandatory)
 	 * do not return error value even if fail to get the value
 	 */
-	if (gpio_is_valid(pdata->tsp_id))
-		of_property_read_string_index(np, "stm,firmware_name", gpio_get_value(pdata->tsp_id), &pdata->firmware_name);
-	else
-		of_property_read_string_index(np, "stm,firmware_name", 0, &pdata->firmware_name);
+	if (variant_plus == NOT_PLUS) {
+		if (gpio_is_valid(pdata->tsp_id))
+			of_property_read_string_index(np, "stm,firmware_name", gpio_get_value(pdata->tsp_id), &pdata->firmware_name);
+		else
+			of_property_read_string_index(np, "stm,firmware_name", 0, &pdata->firmware_name);
+	} else {
+		if (gpio_is_valid(pdata->tsp_id))
+			of_property_read_string_index(np, "stm,firmware_name_P", gpio_get_value(pdata->tsp_id), &pdata->firmware_name);
+		else
+			of_property_read_string_index(np, "stm,firmware_name_P", 0, &pdata->firmware_name);
+	}
 
-	if (of_property_read_string_index(np, "stm,project_name", 0, &pdata->project_name))
-		input_err(true, dev, "%s: skipped to get project_name property\n", __func__);
-	if (of_property_read_string_index(np, "stm,project_name", 1, &pdata->model_name))
-		input_err(true, dev, "%s: skipped to get model_name property\n", __func__);
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_string_index(np, "stm,project_name", 0, &pdata->project_name))
+			input_err(true, dev, "%s: skipped to get project_name property\n", __func__);
+		if (of_property_read_string_index(np, "stm,project_name", 1, &pdata->model_name))
+			input_err(true, dev, "%s: skipped to get model_name property\n", __func__);
+	} else if (variant_plus == IS_PLUS) {
+		if (of_property_read_string_index(np, "stm,project_name_P", 0, &pdata->project_name))
+			input_err(true, dev, "%s: skipped to get project_name property\n", __func__);
+		if (of_property_read_string_index(np, "stm,project_name_P", 1, &pdata->model_name))
+			input_err(true, dev, "%s: skipped to get model_name property\n", __func__);
+	} else {
+		if (of_property_read_u32(np, "stm,pat_function_P", &pdata->pat_function) < 0){
+			pdata->pat_function = PAT_CONTROL_NONE;
+			input_err(true, dev, "%s: Failed to get pat_function property\n", __func__);
+		}
+	}
 
 	if (of_property_read_bool(np, "stm,support_gesture"))
 		pdata->support_sidegesture = true;
@@ -2563,14 +2589,23 @@ static int fts_parse_dt(struct i2c_client *client)
 		input_err(true, dev, "%s: Failed to get device_num property\n", __func__);
 
 #ifdef PAT_CONTROL
-	if (of_property_read_u32(np, "stm,pat_function", &pdata->pat_function) < 0){
-		pdata->pat_function = PAT_CONTROL_NONE;
-		input_err(true, dev, "%s: Failed to get pat_function property\n", __func__);
+	if (variant_plus == IS_PLUS) {
+		if (of_property_read_u32(np, "stm,pat_function_P", &pdata->pat_function) < 0) {
+			pdata->pat_function = PAT_CONTROL_NONE;
+			input_err(true, dev, "%s: Failed to get pat_function property\n", __func__);
+		}
+	} else {
+		if (of_property_read_u32(np, "stm,pat_function", &pdata->pat_function) < 0) {
+			pdata->pat_function = PAT_CONTROL_NONE;
+			input_err(true, dev, "%s: Failed to get pat_function property\n", __func__);
+		}
 	}
 
-	if (of_property_read_u32(np, "stm,afe_base", &pdata->afe_base) < 0){
-		pdata->afe_base = 0;
-		input_err(true, dev, "%s: Failed to get afe_base property\n", __func__);
+	if (variant_plus == IS_PLUS) {
+		if (of_property_read_u32(np, "stm,afe_base", &pdata->afe_base) < 0) {
+			pdata->afe_base = 0;
+			input_err(true, dev, "%s: Failed to get afe_base property\n", __func__);
+		}
 	}
 #endif
 

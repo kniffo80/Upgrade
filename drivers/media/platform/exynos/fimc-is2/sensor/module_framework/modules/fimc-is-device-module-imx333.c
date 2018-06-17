@@ -23,6 +23,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/platform_device.h>
+#include <linux/variant_detection.h>
 #ifdef CONFIG_OF
 #include <linux/of_gpio.h>
 #endif
@@ -197,7 +198,8 @@ static int sensor_imx333_power_setpin(struct platform_device *pdev,
 	}
 
 	if (power_seq_id == 1) {
-		gpio_ois_reset = of_get_named_gpio(dnode, "gpio_ois_reset", 0);
+		if (variant_plus == IS_PLUS)
+			gpio_ois_reset = of_get_named_gpio(dnode, "gpio_ois_reset", 0);
 		if (gpio_is_valid(gpio_ois_reset)) {
 			gpio_request_one(gpio_ois_reset, GPIOF_OUT_INIT_LOW, "CAM_GPIO_OUTPUT_LOW");
 			gpio_free(gpio_ois_reset);

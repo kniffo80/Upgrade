@@ -24,6 +24,7 @@
 #include "fimc-is-dt.h"
 #include "fimc-is-core.h"
 #include "fimc-is-dvfs.h"
+#include <linux/variant_detection.h>
 
 #ifdef CONFIG_OF
 static int get_pin_lookup_state(struct pinctrl *pinctrl,
@@ -341,8 +342,10 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 	if (of_property_read_bool(dnode, "use_ssvc0_internal"))
 		set_bit(SUBDEV_SSVC0_INTERNAL_USE, &pdata->internal_state);
 
-	if (of_property_read_bool(dnode, "use_ssvc1_internal"))
-		set_bit(SUBDEV_SSVC1_INTERNAL_USE, &pdata->internal_state);
+	if (variant_plus == IS_PLUS) {
+		if (of_property_read_bool(dnode, "use_ssvc1_internal"))
+			set_bit(SUBDEV_SSVC1_INTERNAL_USE, &pdata->internal_state);
+	}
 
 	if (of_property_read_bool(dnode, "use_ssvc2_internal"))
 		set_bit(SUBDEV_SSVC2_INTERNAL_USE, &pdata->internal_state);
@@ -421,7 +424,11 @@ static int parse_af_data(struct exynos_platform_fimc_is_module *pdata, struct de
 
 	DT_READ_U32(dnode, "product_name", pdata->af_product_name);
 	DT_READ_U32(dnode, "i2c_addr", pdata->af_i2c_addr);
-	DT_READ_U32(dnode, "i2c_ch", pdata->af_i2c_ch);
+
+	if (variant_plus == IS_PLUS)
+		DT_READ_U32(dnode, "i2c_ch_P", pdata->af_i2c_ch);
+	else
+		DT_READ_U32(dnode, "i2c_ch", pdata->af_i2c_ch);
 
 	return 0;
 }

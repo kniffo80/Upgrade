@@ -29,6 +29,7 @@
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-subdev.h>
+#include <linux/variant_detection.h>
 
 #include <exynos-fimc-is-sensor.h>
 #include "fimc-is-hw.h"
@@ -1016,7 +1017,8 @@ static int sensor_5e6_power_setpin(struct device *dev,
 
 	/* before board Revision 0.2 for dream2*/
 	if (power_seq_id == 0) {
-		gpio_iris_2p8_en = of_get_named_gpio(dnode, "gpio_iris_2p8_en", 0);
+		if (variant_plus == IS_PLUS)
+			gpio_iris_2p8_en = of_get_named_gpio(dnode, "gpio_iris_2p8_en", 0);
 		if (!gpio_is_valid(gpio_iris_2p8_en)) {
 			dev_err(dev, "%s: failed to get gpio_iris_2p8_en\n", __func__);
 			return -EINVAL;
@@ -1034,7 +1036,8 @@ static int sensor_5e6_power_setpin(struct device *dev,
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_none, "VDD_IRIS_1P8", PIN_REGULATOR, 1, 0);  //    1P8
 	/* before board Revision 0.2 for dream2*/
 	if (power_seq_id == 0) {
-		SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_iris_2p8_en, "gpio_iris_2p8_en", PIN_OUTPUT, 1, 0);   //    2P8
+		if (variant_plus == IS_PLUS)
+			SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_iris_2p8_en, "gpio_iris_2p8_en", PIN_OUTPUT, 1, 0);   //    2P8
 	} else {
 		SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_ON, gpio_none, "VDD_IRIS_2P8", PIN_REGULATOR, 1, 0);  //    2P8
 	}
@@ -1050,7 +1053,8 @@ static int sensor_5e6_power_setpin(struct device *dev,
 	SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_none, "VDD_IRIS_1P2", PIN_REGULATOR, 0, 0);
 	/* before board Revision 0.2 for dream2*/
 	if (power_seq_id == 0) {
-		SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_iris_2p8_en, "gpio_iris_2p8_en", PIN_OUTPUT, 0, 0);   //    2P8
+		if (variant_plus == IS_PLUS)
+			SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_iris_2p8_en, "gpio_iris_2p8_en", PIN_OUTPUT, 0, 0);   //    2P8
 	} else {
 		SET_PIN(pdata, SENSOR_SCENARIO_SECURE, GPIO_SCENARIO_OFF, gpio_none, "VDD_IRIS_2P8", PIN_REGULATOR, 0, 0);  //    2P8
 	}

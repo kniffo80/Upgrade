@@ -9,6 +9,7 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+#include <linux/variant_detection.h>
 
 #include <linux/variant_detection.h>
 
@@ -1714,7 +1715,9 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 	int connected;
 #endif
 
-	pdata->tsp_icid = of_get_named_gpio(np, "sec,tsp-icid_gpio", 0);
+	if (variant_plus == NOT_PLUS)
+		pdata->tsp_icid = of_get_named_gpio(np, "sec,tsp-icid_gpio", 0);
+
 	if (gpio_is_valid(pdata->tsp_icid)) {
 		input_info(true, dev, "%s: TSP_ICID : %d\n", __func__, gpio_get_value(pdata->tsp_icid));
 		if (of_property_read_u32(np, "sec,icid_match_value", &ic_match_value)) {
@@ -1735,23 +1738,27 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 		input_info(true, &client->dev, "%s: vsync %s\n", __func__,
 				gpio_get_value(pdata->tsp_vsync) ? "disable" : "enable");
 
-	pdata->irq_gpio = of_get_named_gpio(np, "sec,irq_gpio", 0);
-	if (gpio_is_valid(pdata->irq_gpio)) {
-		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "sec,tsp_int");
-		if (ret) {
-			input_err(true, &client->dev, "%s: Unable to request tsp_int [%d]\n", __func__, pdata->irq_gpio);
+	if (variant_plus == NOT_PLUS) {
+		pdata->irq_gpio = of_get_named_gpio(np, "sec,irq_gpio", 0);
+		if (gpio_is_valid(pdata->irq_gpio)) {
+			ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "sec,tsp_int");
+			if (ret) {
+				input_err(true, &client->dev, "%s: Unable to request tsp_int [%d]\n", __func__, pdata->irq_gpio);
+				return -EINVAL;
+			}
+		} else {
+			input_err(true, &client->dev, "%s: Failed to get irq gpio\n", __func__);
 			return -EINVAL;
 		}
-	} else {
-		input_err(true, &client->dev, "%s: Failed to get irq gpio\n", __func__);
-		return -EINVAL;
 	}
 
 	client->irq = gpio_to_irq(pdata->irq_gpio);
 
-	if (of_property_read_u32(np, "sec,irq_type", &pdata->irq_type)) {
-		input_err(true, dev, "%s: Failed to get irq_type property\n", __func__);
-		pdata->irq_type = IRQF_TRIGGER_LOW | IRQF_ONESHOT;
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_u32(np, "sec,irq_type", &pdata->irq_type)) {
+			input_err(true, dev, "%s: Failed to get irq_type property\n", __func__);
+			pdata->irq_type = IRQF_TRIGGER_LOW | IRQF_ONESHOT;
+		}
 	}
 
 	if (of_property_read_u32(np, "sec,i2c-burstmax", &pdata->i2c_burstmax)) {
@@ -1759,22 +1766,26 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 		pdata->i2c_burstmax = 256;
 	}
 
-	if (of_property_read_u32_array(np, "sec,max_coords", coords, 2)) {
-		input_err(true, &client->dev, "%s: Failed to get max_coords property\n", __func__);
-		return -EINVAL;
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_u32_array(np, "sec,max_coords", coords, 2)) {
+			input_err(true, &client->dev, "%s: Failed to get max_coords property\n", __func__);
+			return -EINVAL;
+		}
 	}
 	pdata->max_x = coords[0] - 1;
 	pdata->max_y = coords[1] - 1;
 
 #ifdef PAT_CONTROL
-	if (of_property_read_u32(np, "sec,pat_function", &pdata->pat_function) < 0) {
-		pdata->pat_function = 0;
-		input_err(true, dev, "%s: Failed to get pat_function property\n", __func__);
-	}
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_u32(np, "sec,pat_function", &pdata->pat_function) < 0) {
+			pdata->pat_function = 0;
+			input_err(true, dev, "%s: Failed to get pat_function property\n", __func__);
+		}
 
-	if (of_property_read_u32(np, "sec,afe_base", &pdata->afe_base) < 0) {
-		pdata->afe_base = 0;
-		input_err(true, dev, "%s: Failed to get afe_base property\n", __func__);
+		if (of_property_read_u32(np, "sec,afe_base", &pdata->afe_base) < 0) {
+			pdata->afe_base = 0;
+			input_err(true, dev, "%s: Failed to get afe_base property\n", __func__);
+		}
 	}
 #endif
 
@@ -1784,20 +1795,24 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 	else
 		input_err(true, dev, "%s: Failed to get tsp-id gpio\n", __func__);
 
-	count = of_property_count_strings(np, "sec,firmware_name");
-	if (count <= 0) {
-		pdata->firmware_name = NULL;
-	} else {
-		if (gpio_is_valid(pdata->tsp_id))
-			of_property_read_string_index(np, "sec,firmware_name", gpio_get_value(pdata->tsp_id), &pdata->firmware_name);
-		else
-			of_property_read_string_index(np, "sec,firmware_name", 0, &pdata->firmware_name);
+	if (variant_plus == NOT_PLUS) {
+		count = of_property_count_strings(np, "sec,firmware_name");
+		if (count <= 0) {
+			pdata->firmware_name = NULL;
+		} else {
+			if (gpio_is_valid(pdata->tsp_id))
+				of_property_read_string_index(np, "sec,firmware_name", gpio_get_value(pdata->tsp_id), &pdata->firmware_name);
+			else
+				of_property_read_string_index(np, "sec,firmware_name", 0, &pdata->firmware_name);
+		}
 	}
 
-	if (of_property_read_string_index(np, "sec,project_name", 0, &pdata->project_name))
-		input_err(true, &client->dev, "%s: skipped to get project_name property\n", __func__);
-	if (of_property_read_string_index(np, "sec,project_name", 1, &pdata->model_name))
-		input_err(true, &client->dev, "%s: skipped to get model_name property\n", __func__);
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_string_index(np, "sec,project_name", 0, &pdata->project_name))
+			input_err(true, &client->dev, "%s: skipped to get project_name property\n", __func__);
+		if (of_property_read_string_index(np, "sec,project_name", 1, &pdata->model_name))
+			input_err(true, &client->dev, "%s: skipped to get model_name property\n", __func__);
+	}
 
 #if defined(CONFIG_FB_MSM_MDSS_SAMSUNG)
 	lcdtype = get_lcd_attached("GET");
@@ -1835,14 +1850,16 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 	else
 		pdata->panel_revision = ((lcdtype >> 8) & 0xFF) >> 4;
 
-	if (of_property_read_string(np, "sec,regulator_dvdd", &pdata->regulator_dvdd)) {
-		input_err(true, dev, "%s: Failed to get regulator_dvdd name property\n", __func__);
-		return -EINVAL;
-	}
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_string(np, "sec,regulator_dvdd", &pdata->regulator_dvdd)) {
+			input_err(true, dev, "%s: Failed to get regulator_dvdd name property\n", __func__);
+			return -EINVAL;
+		}
 
-	if (of_property_read_string(np, "sec,regulator_avdd", &pdata->regulator_avdd)) {
-		input_err(true, dev, "%s: Failed to get regulator_avdd name property\n", __func__);
-		return -EINVAL;
+		if (of_property_read_string(np, "sec,regulator_avdd", &pdata->regulator_avdd)) {
+			input_err(true, dev, "%s: Failed to get regulator_avdd name property\n", __func__);
+			return -EINVAL;
+		}
 	}
 
 	pdata->power = sec_ts_power;
@@ -1850,16 +1867,21 @@ static int sec_ts_parse_dt(struct i2c_client *client)
 	if (of_property_read_u32(np, "sec,always_lpmode", &pdata->always_lpmode) < 0)
 		pdata->always_lpmode = 0;
 
-	if (of_property_read_string(np, "pressure-sensor", &pdata->support_pressure) < 0)
-		input_err(true, dev, "%s: Failed to get pressure-sensor property\n", __func__);
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_string(np, "pressure-sensor", &pdata->support_pressure) < 0)
+			input_err(true, dev, "%s: Failed to get pressure-sensor property\n", __func__);
+	}
 
 	if (of_property_read_u32(np, "sec,bringup", &pdata->bringup) < 0)
 		pdata->bringup = 0;
 
-	if (of_property_read_u32(np, "sec,mis_cal_check", &pdata->mis_cal_check) < 0)
-		pdata->mis_cal_check = 0;
+	if (variant_plus == NOT_PLUS) {
+		if (of_property_read_u32(np, "sec,mis_cal_check", &pdata->mis_cal_check) < 0)
+			pdata->mis_cal_check = 0;
+	}
 
-	pdata->regulator_boot_on = of_property_read_bool(np, "sec,regulator_boot_on");
+	if (variant_plus == NOT_PLUS)
+		pdata->regulator_boot_on = of_property_read_bool(np, "sec,regulator_boot_on");
 	pdata->support_sidegesture = of_property_read_bool(np, "sec,support_sidegesture");
 	pdata->support_dex = of_property_read_bool(np, "support_dex_mode");
 
