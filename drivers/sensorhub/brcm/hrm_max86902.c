@@ -19,6 +19,7 @@
 
 #include "hrmsensor.h"
 #include "hrm_max86902.h"
+#include <linux/variant_detection.h>
 
 #ifdef CONFIG_SPI_TO_I2C_FPGA
 #include <linux/spi/fpga_i2c_expander.h>
@@ -1391,6 +1392,9 @@ static int __max86900_init_device(struct max869_device_data *data)
 	int err;
 	u8 recvData;
 
+	if (variant_plus == IS_PLUS)
+		return -ENODEV;
+
 	err = __max869_write_reg(data, MAX86900_MODE_CONFIGURATION, 0x40);
 	if (err != 0) {
 		HRM_dbg("%s - error sw shutdown device!\n", __func__);
@@ -1467,6 +1471,9 @@ static int __max86902_init_device(struct max869_device_data *data)
 static int __max869_init(struct max869_device_data *data)
 {
 	int err = 0;
+
+	if (variant_plus == IS_PLUS) 
+		return -ENODEV;
 
 	if (data->part_type < PART_TYPE_MAX86902A)
 		err = __max86900_init_device(data);
@@ -5364,6 +5371,9 @@ int max869_init_device(struct i2c_client *client)
 #endif
 {
 	int err = 0;
+	
+	if (variant_plus == IS_PLUS)
+		return -ENODEV;
 
 	HRM_info("%s client  = %p\n", __func__, client);
 
@@ -5459,6 +5469,9 @@ int max869_deinit_device(void)
 int max869_enable(enum hrm_mode mode)
 {
 	int err = 0;
+
+	if (variant_plus == IS_PLUS)
+		return err;
 
 	max869_data->hrm_mode = mode;
 

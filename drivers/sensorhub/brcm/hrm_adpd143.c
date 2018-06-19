@@ -27,6 +27,7 @@
 * published by the Free Software Foundation.
 */
 
+#include <linux/variant_detection.h>
 #include "hrmsensor.h"
 #include "hrm_adpd143.h"
 
@@ -3828,6 +3829,9 @@ static int __adpd_init(void)
 {
 	int err = 0;
 
+	if (variant_plus == NOT_PLUS)
+		return err;
+
 	/* set default register here */
 	HRM_dbg("%s - init done, err  = %d\n", __func__, err);
 
@@ -3838,6 +3842,9 @@ static int __adpd_init(void)
 static int __adpd_set_reg_hrm(void)
 {
 	int err = 0;
+
+	if (variant_plus == NOT_PLUS)
+		return err;
 
 	err = __adpd_init();
 
@@ -4188,6 +4195,9 @@ int adpd_init_device(struct i2c_client *client)
 	unsigned short u16_regval = 0;
 	u16 for_p2p_reg_value, for_p2p_clk32K, for_p2p_clkfifo;
 
+	if (variant_plus == NOT_PLUS)
+		return -ENODEV;
+
 	HRM_dbg("%s - client  = %p\n", __func__, client);
 
 	adpd_data = kzalloc(sizeof(struct adpd_device_data), GFP_KERNEL);
@@ -4350,6 +4360,9 @@ done:
 
 int adpd_deinit_device(void)
 {
+	if (variant_plus == NOT_PLUS)
+		return 0;
+
 	HRM_dbg("%s\n", __func__);
 
 	mutex_lock(&adpd_data->mutex);
@@ -4374,6 +4387,9 @@ int adpd_deinit_device(void)
 int adpd_enable(enum hrm_mode mode)
 {
 	int err = 0;
+
+	if (variant_plus == NOT_PLUS)
+		return err;
 
 	mutex_lock(&adpd_data->mutex);
 	adpd_data->hrm_mode = mode;
@@ -4404,6 +4420,9 @@ int adpd_enable(enum hrm_mode mode)
 int adpd_disable(enum hrm_mode mode)
 {
 	int err = 0;
+
+	if (variant_plus == NOT_PLUS)
+		return err;
 
 	mutex_lock(&adpd_data->mutex);
 	adpd_data->hrm_mode = 0;
@@ -4906,4 +4925,5 @@ int adpd_get_sensor_info(char *sensor_info_data)
 										adpd_data->slot_data[6], adpd_data->slot_data[7], adpd_data->slot_data[0],
 										adpd_data->slot_data[1], adpd_data->slot_data[2], adpd_data->slot_data[3]);
 }
+
 
