@@ -97,6 +97,14 @@ struct delayinfo DLYINFO(_name_) = {	\
 	.usec = (_usec_),					\
 }
 
+#define DLYINFO(_name_) (_name_)
+#define DEFINE_PANEL_UDELAYP_NO_SLEEP(_name_, _usec_)	\
+struct delayinfo DLYINFO(_name_) = {	\
+	.name = #_name_,					\
+	.type = CMD_TYPE_DELAY_NO_SLEEP,				\
+	.usec = (_usec_),					\
+}
+
 #define DEFINE_PANEL_MDELAY_NO_SLEEP(_name_, _msec_)	\
 struct delayinfo DLYINFO(_name_) = {	\
 	.name = #_name_,					\
@@ -117,6 +125,14 @@ struct delayinfo DLYINFO(_name_) = {	\
 	.type = CMD_TYPE_DELAY,				\
 	.usec = (_msec_) * 1000,			\
 }
+
+#define DEFINE_PANEL_MDELAYP(_name_, _msec_)	\
+struct delayinfo DLYINFO(_name_) = {	\
+	.name = #_name_,					\
+	.type = CMD_TYPE_DELAY,				\
+	.usec = (_msec_) * 1000,			\
+}
+
 
 /* external pin control command */
 struct pininfo {

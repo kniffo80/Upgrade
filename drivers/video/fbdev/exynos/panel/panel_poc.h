@@ -45,22 +45,14 @@
 #define POC_USER_FILE_PATH	("/efs/FactoryApp/poc_user")
 #endif
 
-#if defined(CONFIG_POC_DREAM)
 #define ERASE_WAIT_COUNT	(180)
 #define WR_DONE_UDELAY		(4000)
 #define QD_DONE_MDELAY		(30)
 #define RD_DONE_UDELAY		(200)
-#elif defined(CONFIG_POC_DREAM2)
-#define ERASE_WAIT_COUNT	(41)
-#define WR_DONE_UDELAY		(800)
-#define QD_DONE_MDELAY		(10)
-#define RD_DONE_UDELAY		(200)
-#else
-#define ERASE_WAIT_COUNT	(180)
-#define WR_DONE_UDELAY		(4000)
-#define QD_DONE_MDELAY		(30)
-#define RD_DONE_UDELAY		(200)
-#endif
+#define ERASE_WAIT_COUNTP	(41)
+#define WR_DONE_UDELAYP		(800)
+#define QD_DONE_MDELAYP		(10)
+#define RD_DONE_UDELAYP		(200)
 
 enum poc_flash_state {
 	POC_FLASH_STATE_UNKNOWN = -1,
