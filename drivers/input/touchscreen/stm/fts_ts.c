@@ -53,6 +53,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h>
 #include <linux/input/mt.h>
+#include <linux/variant_detection.h>
 #ifdef CONFIG_SEC_SYSFS
 #include <linux/sec_sysfs.h>
 #endif
@@ -2799,6 +2800,9 @@ static int fts_probe(struct i2c_client *client, const struct i2c_device_id *idp)
 	struct fts_ts_info *info = NULL;
 	int i = 0;
 
+	if (variant_plus == NOT_PLUS)
+		return 0;
+
 	input_info(true, &client->dev, "%s: FTS Driver [70%s]\n", __func__,
 	       FTS_TS_DRV_VERSION);
 
@@ -3902,6 +3906,9 @@ static struct i2c_driver fts_i2c_driver = {
 
 static int __init fts_driver_init(void)
 {
+	if (variant_plus == NOT_PLUS)
+		return 0;
+
 	return i2c_add_driver(&fts_i2c_driver);
 }
 

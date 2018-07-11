@@ -10,6 +10,8 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/variant_detection.h>
+
 struct sec_ts_data *tsp_info;
 
 #include "sec_ts.h"
@@ -2076,6 +2078,9 @@ static int sec_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
 	unsigned char deviceID[5] = { 0 };
 	unsigned char result = 0;
 
+	if (variant_plus == IS_PLUS)
+		return 0;
+
 	input_info(true, &client->dev, "%s\n", __func__);
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
@@ -3123,6 +3128,8 @@ static struct i2c_driver sec_ts_driver = {
 
 static int __init sec_ts_init(void)
 {
+	if (variant_plus == IS_PLUS)
+		return 0;
 #ifdef CONFIG_BATTERY_SAMSUNG
 	if (lpcharge == 1) {
 		pr_err("%s %s: Do not load driver due to : lpm %d\n",
