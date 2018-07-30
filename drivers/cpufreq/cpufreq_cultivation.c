@@ -30,7 +30,10 @@
 #include <linux/workqueue.h>
 #include <linux/kthread.h>
 #include <linux/slab.h>
-#include <linux/state_notifier.h>
+#include <linux/fb.h>
+
+static struct notifier_block fb_notif;
+static bool state_suspended = true;
 
 /* cultivation version */
 #define CULTIVATION_VERSION_MAJOR	(1)
@@ -71,6 +74,30 @@ static struct mutex gov_lock;
 /* Target load.  Lower values result in higher CPU speeds. */
 #define DEFAULT_TARGET_LOAD 90
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
+
+static int fb_notifier_callback(struct notifier_block *self,
+			unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int *blank;
+
+	if (evdata && evdata->data && event == FB_EVENT_BLANK) {
+		blank = evdata->data;
+		switch (*blank) {
+			case FB_BLANK_UNBLANK:
+				state_suspended = false;
+				break;
+			case FB_BLANK_POWERDOWN:
+			case FB_BLANK_HSYNC_SUSPEND:
+			case FB_BLANK_VSYNC_SUSPEND:
+			case FB_BLANK_NORMAL:
+				state_suspended = true;
+				break;
+		}
+	}
+
+	return NOTIFY_OK;
+}
 
 #define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
 #define SCREEN_OFF_TIMER_RATE (50 * USEC_PER_MSEC)
@@ -1528,6 +1555,9 @@ static int __init cpufreq_cultivation_init(void)
 	/* NB: wake up so the thread does not look hung to the freezer */
 	wake_up_process(speedchange_task);
 
+	fb_notif.notifier_call = fb_notifier_callback;
+ 	fb_register_client(&fb_notif);
+
 	return cpufreq_register_governor(&cpufreq_gov_cultivation);
 }
 
@@ -1545,6 +1575,8 @@ static void __exit cpufreq_cultivation_exit(void)
 	cpufreq_unregister_governor(&cpufreq_gov_cultivation);
 	kthread_stop(speedchange_task);
 	put_task_struct(speedchange_task);
+
+ 	fb_unregister_client(&fb_notif);
 
 	for_each_possible_cpu(cpu) {
 		pcpu = &per_cpu(cpuinfo, cpu);
